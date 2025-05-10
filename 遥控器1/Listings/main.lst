@@ -1,0 +1,119 @@
+C51 COMPILER V9.60.7.0   MAIN                                                              05/10/2025 21:13:29 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: E:\keil c51\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\mai
+                    -n.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <at89c51RC2.h>
+   2          #include "UART.H"
+   3          
+   4          // 按键引脚定义
+   5          sbit KEY1 = P2^0;  // 前进按键
+   6          sbit KEY2 = P2^1;  // 后退按键
+   7          sbit KEY3 = P3^2;  // 左转按键
+   8          sbit KEY4 = P3^3;  // 右转按键
+   9          
+  10          // 用于标记按键是否按下
+  11          bit key1_pressed = 0;
+  12          bit key2_pressed = 0;
+  13          bit key3_pressed = 0;
+  14          bit key4_pressed = 0;
+  15          
+  16          // 记录前进状态（是否正在前进）
+  17          bit moving_forward = 0;
+  18          // 记录后退状态（是否正在后退）
+  19          bit moving_backward = 0;
+  20          
+  21          void main()
+  22          {
+  23   1          Uart1_Init();  // 初始化串口
+  24   1          IT0 = 1;        // 设置 INT0 为下降沿触发
+  25   1          IT1 = 1;        // 设置 INT1 为下降沿触发
+  26   1          EX0 = 1;        // 启用外部中断 0
+  27   1          EX1 = 1;        // 启用外部中断 1
+  28   1          EA = 1;         // 启用总中断
+  29   1      
+  30   1          while(1)
+  31   1          {
+  32   2              // 处理前进和后退按键
+  33   2              if (KEY1 == 0 && !key1_pressed) {  // 前进按键按下
+  34   3                  UART_SendChar('F');
+  35   3                  key1_pressed = 1;  // 标记为按下
+  36   3                  moving_forward = 1;  // 记录电机正在前进
+  37   3                  moving_backward = 0; // 停止后退
+  38   3              } else if (KEY1 == 1 && key1_pressed) {  // 前进按键松开
+  39   3                  key1_pressed = 0;  // 重置标记
+  40   3                  if (!key2_pressed) {  // 只有当没有后退命令时才停止
+  41   4                      UART_SendChar('S');
+  42   4                      moving_forward = 0;  // 电机停止
+  43   4                  }
+  44   3              }
+  45   2      
+  46   2              if (KEY2 == 0 && !key2_pressed) {  // 后退按键按下
+  47   3                  UART_SendChar('B');
+  48   3                  key2_pressed = 1;  // 标记为按下
+  49   3                  moving_forward = 0;  // 停止前进
+  50   3                  moving_backward = 1; // 记录电机正在后退
+  51   3              } else if (KEY2 == 1 && key2_pressed) {  // 后退按键松开
+  52   3                  key2_pressed = 0;  // 重置标记
+  53   3                  if (!key1_pressed) {  // 只有当没有前进命令时才停止
+  54   4                      UART_SendChar('S');
+C51 COMPILER V9.60.7.0   MAIN                                                              05/10/2025 21:13:29 PAGE 2   
+
+  55   4                      moving_backward = 0; // 电机停止
+  56   4                  }
+  57   3              }
+  58   2          }
+  59   1      }
+  60          
+  61          void INT0_ISR(void) interrupt 0 {
+  62   1          if (KEY3 == 0 && !key3_pressed) {  // 左转按键按下
+  63   2              UART_SendChar('L');  // 启动转向
+  64   2              key3_pressed = 1;    // 标记为按下
+  65   2          }
+  66   1          while (KEY3 == 0);   // 等待按键松开
+  67   1          key3_pressed = 0;     // 松开时重置标记
+  68   1          // 如果前进键或后退键还在按下，则继续前进或后退
+  69   1          if (moving_forward) {
+  70   2              UART_SendChar('F');  // 继续前进
+  71   2          } else if (moving_backward) {
+  72   2              UART_SendChar('B');  // 继续后退
+  73   2          } else {
+  74   2              UART_SendChar('S');  // 否则停止电机
+  75   2          }
+  76   1      }
+  77          
+  78          void INT1_ISR(void) interrupt 2 {
+  79   1          if (KEY4 == 0 && !key4_pressed) {  // 右转按键按下
+  80   2              UART_SendChar('R');  // 启动转向
+  81   2              key4_pressed = 1;    // 标记为按下
+  82   2          }
+  83   1          while (KEY4 == 0);   // 等待按键松开
+  84   1          key4_pressed = 0;     // 松开时重置标记
+  85   1          // 如果前进键或后退键还在按下，则继续前进或后退
+  86   1          if (moving_forward) {
+  87   2              UART_SendChar('F');  // 继续前进
+  88   2          } else if (moving_backward) {
+  89   2              UART_SendChar('B');  // 继续后退
+  90   2          } else {
+  91   2              UART_SendChar('S');  // 否则停止电机
+  92   2          }
+  93   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    275    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      6    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
